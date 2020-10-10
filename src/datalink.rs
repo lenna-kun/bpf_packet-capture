@@ -102,27 +102,18 @@ pub fn channel(network_interface_name: &String, config: Config) -> io::Result<Ch
         return Err(err);
     }
 
-    // // Get the device type
-    // let mut dlt: libc::c_uint = 0;
-    // if unsafe { bpf::ioctl(fd, bpf::BIOCGDLT, &mut dlt) } == -1 {
-    //     let err = io::Error::last_os_error();
-    //     unsafe {
-    //         libc::close(fd);
-    //     }
-    //     return Err(err);
-    // }
-
-    // if dlt == bpf::DLT_NULL {
-    //     return Err(io::Error::new(io::ErrorKind::Other, "Loopback device is not supported"));
-    // }
-
-    // Don't fill in source MAC
-    if unsafe { bpf::ioctl(fd, bpf::BIOCSHDRCMPLT, &1) } == -1 {
+    // Get the device type
+    let mut dlt: libc::c_uint = 0;
+    if unsafe { bpf::ioctl(fd, bpf::BIOCGDLT, &mut dlt) } == -1 {
         let err = io::Error::last_os_error();
         unsafe {
             libc::close(fd);
         }
         return Err(err);
+    }
+
+    if dlt == bpf::DLT_NULL {
+        return Err(io::Error::new(io::ErrorKind::Other, "Loopback device is not supported"));
     }
 
     // Activate promiscuous mode
@@ -140,7 +131,7 @@ pub fn channel(network_interface_name: &String, config: Config) -> io::Result<Ch
     if unsafe { libc::fcntl(fd, libc::F_SETFL, libc::O_NONBLOCK) } == -1 {
         let err = io::Error::last_os_error();
         unsafe {
-            pnet_sys::close(fd);
+            libc::close(fd);
         }
         return Err(err);
     }
